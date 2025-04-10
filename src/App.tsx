@@ -15,6 +15,40 @@ const POSITIONS: { value: Position; label: string }[] = [
   { value: 5, label: 'Goali' },
 ] as const;
 
+// Helper function to map position labels or numbers to values
+const getPositionValue = (position: string | number): Position => {
+  // If it's already a number between 1-5, use it
+  const numPosition = Number(position);
+  if (!isNaN(numPosition) && numPosition >= 1 && numPosition <= 5) {
+    return numPosition as Position;
+  }
+
+  // If it's a string, try to map it
+  if (typeof position === 'string') {
+    const normalizedLabel = position.trim().toLowerCase();
+    switch (normalizedLabel) {
+      case 'stürmer':
+      case 'stürmer*in':
+      case 'stuermer':
+      case 'stuermer*in':
+        return 2;
+      case 'center':
+      case 'center*in':
+        return 3;
+      case 'verteidiger':
+      case 'verteidiger*in':
+        return 4;
+      case 'goali':
+      case 'goalie':
+      case 'torwart':
+      case 'torwart*in':
+        return 5;
+    }
+  }
+
+  return 1; // Default to "Position nicht gewählt"
+};
+
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -373,7 +407,9 @@ function App() {
             const teamName = row.Team?.trim();
             const team = teams.find(t => t.name.toLowerCase() === teamName?.toLowerCase());
             const teamId = team?.id || selectedTeam;
-            const position = POSITIONS.find(pos => pos.label === row.Position)?.value || 1;
+            
+            // Use the updated helper function to get the correct position value
+            const position = getPositionValue(row.Position || 1);
 
             return {
               team_id: teamId,
@@ -723,6 +759,7 @@ function App() {
                                       className="text-gray-600 hover:text-gray-800"
                                     >
                                       <X className="h-4 w-4" />
+                
                                     </button>
                                   </div>
                                 </td>
