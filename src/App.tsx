@@ -4,14 +4,15 @@ import { DeleteConfirmDialog } from './components/DeleteConfirmDialog';
 import { supabase } from './lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { LogOut, Plus, Trash2, UserPlus, Users, Pencil, X, Check, Download, Upload } from 'lucide-react';
-import { Team, Player } from './types/database';
+import { Team, Player, Position } from './types/database';
 import * as Papa from 'papaparse';
 
-const POSITIONS = [
-  { value: '', label: 'Position nicht gewählt' },
-  { value: 'stuermer', label: 'Stürmer*in' },
-  { value: 'center', label: 'Center*in' },
-  { value: 'verteidiger', label: 'Verteidiger*in' },
+const POSITIONS: { value: Position; label: string }[] = [
+  { value: 1, label: 'Position nicht gewählt' },
+  { value: 2, label: 'Stürmer*in' },
+  { value: 3, label: 'Center*in' },
+  { value: 4, label: 'Verteidiger*in' },
+  { value: 5, label: 'Goali' },
 ] as const;
 
 function App() {
@@ -27,13 +28,13 @@ function App() {
   const [editingPlayerData, setEditingPlayerData] = useState({
     first_name: '',
     last_name: '',
-    position: '',
+    position: 1 as Position,
     jersey_number: '',
   });
   const [newPlayer, setNewPlayer] = useState({
     first_name: '',
     last_name: '',
-    position: '',
+    position: 1 as Position,
     jersey_number: '',
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -168,7 +169,7 @@ function App() {
     setEditingPlayerData({
       first_name: player.first_name,
       last_name: player.last_name,
-      position: player.position || '',
+      position: player.position || 1,
       jersey_number: player.jersey_number?.toString() || '',
     });
   };
@@ -184,7 +185,7 @@ function App() {
       .update({
         first_name: editingPlayerData.first_name.trim(),
         last_name: editingPlayerData.last_name.trim(),
-        position: editingPlayerData.position || null,
+        position: editingPlayerData.position,
         jersey_number: editingPlayerData.jersey_number ? parseInt(editingPlayerData.jersey_number) : null,
       })
       .eq('id', playerId);
@@ -198,7 +199,7 @@ function App() {
     setEditingPlayerData({
       first_name: '',
       last_name: '',
-      position: '',
+      position: 1,
       jersey_number: '',
     });
     if (selectedTeam) {
@@ -219,7 +220,7 @@ function App() {
       team_id: selectedTeam,
       first_name: newPlayer.first_name.trim(),
       last_name: newPlayer.last_name.trim(),
-      position: newPlayer.position || null,
+      position: newPlayer.position,
       jersey_number: newPlayer.jersey_number ? parseInt(newPlayer.jersey_number) : null,
     });
 
@@ -231,7 +232,7 @@ function App() {
     setNewPlayer({
       first_name: '',
       last_name: '',
-      position: '',
+      position: 1,
       jersey_number: '',
     });
     fetchPlayers(selectedTeam);
@@ -268,7 +269,6 @@ function App() {
   };
 
   const handleInitiateTeamDelete = async (teamId: string, teamName: string) => {
-    // Check if team has players
     const { data: teamPlayers, error } = await supabase
       .from('players')
       .select('id')
@@ -373,12 +373,13 @@ function App() {
             const teamName = row.Team?.trim();
             const team = teams.find(t => t.name.toLowerCase() === teamName?.toLowerCase());
             const teamId = team?.id || selectedTeam;
+            const position = POSITIONS.find(pos => pos.label === row.Position)?.value || 1;
 
             return {
               team_id: teamId,
               first_name: row.Vorname.trim(),
               last_name: row.Nachname.trim(),
-              position: POSITIONS.find(pos => pos.label === row.Position)?.value || '',
+              position,
               jersey_number: row.Trikotnummer ? parseInt(row.Trikotnummer) : null,
             };
           });
@@ -412,7 +413,7 @@ function App() {
     );
   }
 
-  const getPositionLabel = (positionValue: string | null) => {
+  const getPositionLabel = (positionValue: Position | null) => {
     return POSITIONS.find(pos => pos.value === positionValue)?.label || POSITIONS[0].label;
   };
 
@@ -605,7 +606,7 @@ function App() {
                     />
                     <select
                       value={newPlayer.position}
-                      onChange={(e) => setNewPlayer({ ...newPlayer, position: e.target.value })}
+                      onChange={(e) => setNewPlayer({ ...newPlayer, position: parseInt(e.target.value) as Position })}
                       className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     >
                       {POSITIONS.map(pos => (
@@ -690,7 +691,7 @@ function App() {
                                     value={editingPlayerData.position}
                                     onChange={(e) => setEditingPlayerData({
                                       ...editingPlayerData,
-                                      position: e.target.value
+                                      position: parseInt(e.target.value) as Position
                                     })}
                                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                   >
@@ -715,7 +716,7 @@ function App() {
                                         setEditingPlayerData({
                                           first_name: '',
                                           last_name: '',
-                                          position: '',
+                                          position: 1,
                                           jersey_number: '',
                                         });
                                       }}
